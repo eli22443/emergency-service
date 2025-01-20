@@ -9,11 +9,11 @@ public class StompServer {
 
     public static void main(String[] args) {
         // TODO: implement this
-                Server.threadPerClient(
-                7777, //port
-                () -> new TCPStompMessegingProtocol<>(), //protocol factory
-                LineMessageEncoderDecoder::new //message encoder decoder factory
-        ).serve();
+        //         Server.threadPerClient(
+        //         7777, //port
+        //         () -> new EchoProtocol<>(), //protocol factory
+        //         LineMessageEncoderDecoder::new //message encoder decoder factory
+        // ).serve();
 
         // Server.reactor(
         //         Runtime.getRuntime().availableProcessors(),
