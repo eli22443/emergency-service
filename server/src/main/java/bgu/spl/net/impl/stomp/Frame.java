@@ -9,7 +9,7 @@ public class Frame {
 
     // Constructor, getters, setters, and other helper methods
     public Frame(String command, Map<String, String> headers, String body) {
-        this.command = "command";
+        this.command = command;
         this.headers = headers;
         this.body = body;
     }
