@@ -25,4 +25,17 @@ public class Frame {
         result += "\n" + body + "\n" + '\u0000';
         return result;
     }
+
+    public String getCommand() {
+        return command;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public String getBody() {
+        return body;
+    }
+    
 }
