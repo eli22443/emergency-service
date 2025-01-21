@@ -3,18 +3,19 @@ package bgu.spl.net.impl.stomp;
 import bgu.spl.net.api.StompMessagingProtocol;
 import bgu.spl.net.srv.Connections;
 
-public class TCPStompMessegingProtocol<T> implements StompMessagingProtocol<T> {
+public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame> {
 
+    // private int clientId;
     private boolean shouldTerminate = false;
 
     @Override
-    public void start(int connectionId, Connections<T> connections) {
+    public void start(int connectionId, Connections<Frame> connections) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'start'");
     }
 
     @Override
-    public void process(T message) {
+    public void process(Frame message) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'process'");
     }

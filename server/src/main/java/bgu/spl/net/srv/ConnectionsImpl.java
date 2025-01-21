@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ConnectionsImpl<T> implements Connections<T> {
-    // USE AS SINGLETON
+    // USE AS SINGLETON ?
 
     Map<Integer, ConnectionHandler<T>> activeClients = new ConcurrentHashMap<>();
     Map<String, Set<Integer>> channels = new ConcurrentHashMap<>();
