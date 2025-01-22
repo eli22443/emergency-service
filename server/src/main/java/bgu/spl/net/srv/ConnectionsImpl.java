@@ -61,10 +61,10 @@ public class ConnectionsImpl<T> implements Connections<T> {
     }
 
     public synchronized void addSubscription(String channel, int connectionId, int subscriptionId) {
-        if (!channels.containsKey(channel)) {
+        if (!channels.containsKey(channel))
             channels.put(channel, ConcurrentHashMap.newKeySet());
+        if(!subscriptionIDs.containsKey(connectionId))
             subscriptionIDs.put(connectionId, new ConcurrentHashMap<>());
-        }
         channels.get(channel).add(connectionId);
         subscriptionIDs.get(connectionId).put(channel, subscriptionId);
     }
@@ -105,5 +105,9 @@ public class ConnectionsImpl<T> implements Connections<T> {
     }
     public synchronized Map<String,Integer> getSubscriptionIDs(int connectionId){
         return subscriptionIDs.get(connectionId);
+    }
+
+    public synchronized void addLogin(String username, String password) {
+        logins.put(username, password);
     }
 }

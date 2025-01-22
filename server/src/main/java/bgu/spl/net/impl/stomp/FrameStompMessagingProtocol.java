@@ -15,79 +15,92 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
     private boolean shouldTerminate = false;
 
     private int connectionId; // Unique ID for this connection
-    private Connections<Frame> connections; // Reference to manage connections
+    private ConnectionsImpl<Frame> connectionsImpl; // Reference to manage connections
 
-    // private String username=null; // Current logged-in username (or null if not logged in)
-    // private String password=null; // Current logged-in password (or null if not logged in)
+    // private String username=null; // Current logged-in username (or null if not
+    // logged in)
+    // private String password=null; // Current logged-in password (or null if not
+    // logged in)
     private final Set<String> subscribedTopics = new HashSet<>(); // Topics this client subscribed to
     private final Map<Integer, String> receipts = new ConcurrentHashMap<>(); // To manage receipt IDs
     private final Map<Integer, String> subscriptions = new ConcurrentHashMap<>(); // To manage subscriptions
 
-
     @Override
     public void start(int connectionId, Connections<Frame> connections) {
         this.connectionId = connectionId;
-        this.connections = connections;
+        this.connectionsImpl = (ConnectionsImpl<Frame>) connections;
     }
 
     @Override
     public void process(Frame message) {
-        ConnectionsImpl<Frame> connectionsImpl = (ConnectionsImpl<Frame>) connections;
-
-        if(message.getCommand().equals("CONNECT")) {
+        if (message.getCommand().equals("CONNECT")) {
             String username = message.getHeaders().get("login");
             String password = message.getHeaders().get("passcode");
             Map<String, String> headers = new HashMap<>();
-            if(connectionsImpl.getPassword(username)==null || password.equals(connectionsImpl.getPassword(username))) {
-                // Send CONNECTED frame
+
+            if (connectionsImpl.getPassword(username) != null) {
+                if (!password.equals(connectionsImpl.getPassword(username))) {
+                    headers.put("message", "wrong password");
+                    connectionsImpl.send(connectionId, new Frame("ERROR", headers,
+                            "The message :\n----\n" + message.toString().substring(0, message.toString().length()-2) + "----\n" +
+                                    "Contains bad login details"));
+                }else{
+                    headers.put("version", "1.2");
+                    connectionsImpl.send(connectionId, new Frame("CONNECTED", headers, ""));
+                }
+            } else {
+                connectionsImpl.addLogin(username, password);
                 headers.put("version", "1.2");
                 connectionsImpl.send(connectionId, new Frame("CONNECTED", headers, ""));
-            } else {
-                // Send ERROR frame
-                // headers.put("receipt - id", "message -12345");
-                headers.put("message", "bad login");
-                connectionsImpl.send(connectionId, new Frame("ERROR", headers, ""));
             }
-        }if(message.getCommand().equals("SEND")) {
+        }
+        if (message.getCommand().equals("SEND")) {
             // String receipt = message.getHeaders().get("receipt");
             // if(receipt != null) {
-            //     Map<String, String> headers = new ConcurrentHashMap<>();
-            //     headers.put("receipt-id", receipt);
-            //     connections.send(connectionId, new Frame("RECEIPT", headers, ""));
+            // Map<String, String> headers = new ConcurrentHashMap<>();
+            // headers.put("receipt-id", receipt);
+            // connections.send(connectionId, new Frame("RECEIPT", headers, ""));
             // }
             String topic = message.getHeaders().get("destination");
             String body = message.getBody();
 
-            Map<String,String> headers = new ConcurrentHashMap<>();
-            headers.put("message-id", connectionsImpl.getMessageId()+"");
+            Map<String, String> headers = new ConcurrentHashMap<>();
+            headers.put("message-id", connectionsImpl.getMessageId() + "");
             headers.put("destination", topic);
 
-            for(Integer id: connectionsImpl.getChannels().get(topic)) {
-                headers.put("subscription", connectionsImpl.getSubscriptionIDs(id).get(topic)+"");
+            for (Integer id : connectionsImpl.getChannels().get(topic)) {
+                headers.put("subscription", connectionsImpl.getSubscriptionIDs(id).get(topic) + "");
                 connectionsImpl.send(id, new Frame("MESSAGE", headers, body));
             }
-            
-        }if(message.getCommand().equals("SUBSCRIBE")) {
+
+        }
+        if (message.getCommand().equals("SUBSCRIBE")) {
             String topic = message.getHeaders().get("destination");
             int subscriptionId = Integer.parseInt(message.getHeaders().get("id"));
             subscriptions.put(subscriptionId, topic);
             subscribedTopics.add(topic);
             connectionsImpl.addSubscription(topic, connectionId, subscriptionId);
-        }if(message.getCommand().equals("UNSUBSCRIBE")) {
+        }
+        if (message.getCommand().equals("UNSUBSCRIBE")) {
             // String receipt = message.getHeaders().get("receipt");
             // if(receipt != null) {
-            //     Map<String, String> headers = new ConcurrentHashMap<>();
-            //     headers.put("receipt-id", receipt);
-            //     connections.send(connectionId, new Frame("RECEIPT", headers, ""));
+            // Map<String, String> headers = new ConcurrentHashMap<>();
+            // headers.put("receipt-id", receipt);
+            // connections.send(connectionId, new Frame("RECEIPT", headers, ""));
             // }
             int subscriptionId = Integer.parseInt(message.getHeaders().get("id"));
             String topic = subscriptions.remove(subscriptionId);
             subscribedTopics.remove(topic);
             connectionsImpl.removeSubscription(topic, connectionId);
 
-        }if(message.getCommand().equals("DISCONNECT")) {
-
-            // Do something with the message
+        }
+        if (message.getCommand().equals("DISCONNECT")) {
+            String receipt = message.getHeaders().get("receipt");
+            if (receipt != null) {
+                Map<String, String> headers = new ConcurrentHashMap<>();
+                headers.put("receipt-id", receipt);
+                connectionsImpl.send(connectionId, new Frame("RECEIPT", headers, ""));
+            }
             shouldTerminate = true;
         }
     }
@@ -96,5 +109,11 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
     public boolean shouldTerminate() {
         return shouldTerminate;
     }
-    
+
+    public void removeAllSubscriptions() {
+        for (String topic : subscribedTopics) {
+            connectionsImpl.removeSubscription(topic, connectionId);
+        }
+    }
+
 }

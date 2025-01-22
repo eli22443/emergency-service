@@ -15,6 +15,7 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
     @Override
     public Frame decodeNextByte(byte nextByte) {
         if (nextByte == '\u0000') {
+            System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8));
             return popFrame();
         }
 
@@ -68,10 +69,10 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
 
     Map<String, String> getHeaders(StringBuilder str) {
         Map<String, String> headers = new HashMap<>();
-        String key = "";
-        String value = "";
         char c = str.charAt(0);
         while (c != '\n') {
+            String key = "";
+            String value = "";
             while (c != '\n') {
                 if (c == ':') {
                     key = value;
@@ -92,13 +93,13 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
 
     String getBody(StringBuilder str) {
         String body = "";
-        char c = str.charAt(0);
-        while (c != '\u0000') {
-            body += c;
+        // char c = str.charAt(0);
+        while (str.length() > 0) {
+            body += str.charAt(0);
             str = str.deleteCharAt(0);
-            c = str.charAt(0);
+            // c = str.charAt(0);  
         }
-        str = str.deleteCharAt(0);
+        // str = str.deleteCharAt(0);
         return body;
     }
 
