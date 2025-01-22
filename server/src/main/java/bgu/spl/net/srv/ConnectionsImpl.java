@@ -7,11 +7,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConnectionsImpl<T> implements Connections<T> {
     // saves info about the active clients (login id, subscribed topics, etc.)
 
-    Map<Integer, ConnectionHandler<T>> activeClients = new ConcurrentHashMap<>();
-    Map<String, Set<Integer>> channels = new ConcurrentHashMap<>();
+    private Map<Integer, ConnectionHandler<T>> activeClients = new ConcurrentHashMap<>();
+    private Map<String, Set<Integer>> channels = new ConcurrentHashMap<>();
+    private Map<String, String> logins = new ConcurrentHashMap<>();
+    private Map<Integer, Map<String, Integer>> subscriptionIDs = new ConcurrentHashMap<>();
+    private int messageId = 0;
 
     @Override
-    public boolean send(int connectionId, T msg) {
+    public synchronized boolean send(int connectionId, T msg) {
         ConnectionHandler<T> ch = activeClients.get(connectionId);
         if (ch != null) {
             ch.send(msg);
@@ -20,18 +23,19 @@ public class ConnectionsImpl<T> implements Connections<T> {
         return false;
     }
 
+    // Not used?
     @Override
-    public void send(String channel, T msg) {
+    public synchronized void send(String channel, T msg) {
         Set<Integer> channelList = channels.get(channel);
         if (channelList != null) {
-            for (Integer id : channelList) 
+            for (Integer id : channelList)
                 send(id, msg);
         }
 
     }
 
     @Override
-    public void disconnect(int connectionId) {
+    public synchronized void disconnect(int connectionId) {
         activeClients.remove(connectionId);
         for (Map.Entry<String, Set<Integer>> entry : channels.entrySet()) {
             // String key = entry.getKey();
@@ -40,25 +44,66 @@ public class ConnectionsImpl<T> implements Connections<T> {
         }
     }
 
-    public Map<Integer, ConnectionHandler<T>> getActiveClients() {
+    public synchronized Map<Integer, ConnectionHandler<T>> getActiveClients() {
         return activeClients;
     }
 
-    public Map<String, Set<Integer>> getChannels() {
+    public synchronized Map<String, Set<Integer>> getChannels() {
         return channels;
     }
 
-    public void addActiveClient(int connectionId, ConnectionHandler<T> ch) {
+    public synchronized void addActiveClient(int connectionId, ConnectionHandler<T> ch) {
         activeClients.put(connectionId, ch);
     }
 
-    public void addChannel(String channel, int connectionId) {
-        if (!channels.containsKey(channel)) {
-            channels.put(channel, ConcurrentHashMap.newKeySet());
-        }
-        channels.get(channel).add(connectionId);
+    public synchronized void removeActiveClient(int connectionId) {
+        activeClients.remove(connectionId);
     }
 
-    
+    public synchronized void addSubscription(String channel, int connectionId, int subscriptionId) {
+        if (!channels.containsKey(channel)) {
+            channels.put(channel, ConcurrentHashMap.newKeySet());
+            subscriptionIDs.put(connectionId, new ConcurrentHashMap<>());
+        }
+        channels.get(channel).add(connectionId);
+        subscriptionIDs.get(connectionId).put(channel, subscriptionId);
+    }
 
+    public synchronized void removeSubscription(String topic, int connectionId) {
+        channels.get(topic).remove(connectionId);
+        subscriptionIDs.get(connectionId).remove(topic);
+    }
+
+    public synchronized String getPassword(String username) {
+        if (!logins.containsKey(username))
+            return null;
+        return logins.get(username);
+    }
+
+    // public synchronized void sendMessage(String topic, String body) {
+    //     Map<String, String> headers = new ConcurrentHashMap<>();
+    //     headers.put("message-id", Integer.toString(messageId));
+    //     headers.put("destination", topic);
+
+    //     Set<Integer> channelList = channels.get(topic);
+    //     if (channelList != null) {
+    //         for (Integer id : channelList) {
+    //             headers.put("subscription", Integer.toString(subscriptionIDs.get(id).get(topic)));
+    //             send(id, new Frame("MESSAGE", headers, body));
+    //         }
+    //     }
+
+    //     send(topic, new Frame("MESSAGE", headers, body));
+    // }
+
+    public int getMessageId() {
+        return messageId++;
+    }
+
+    public synchronized Set<Integer> getChannel(String topic) {
+        return channels.get(topic);
+    }
+    public synchronized Map<String,Integer> getSubscriptionIDs(int connectionId){
+        return subscriptionIDs.get(connectionId);
+    }
 }
