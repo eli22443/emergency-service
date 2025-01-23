@@ -9,26 +9,19 @@
 #include <queue>
 #include "../include/ConnectionHandler.h"
 #include "../include/event.h"
+#include "../include/StompClient.h"
 
-class StompClient {
-private:
-    std::atomic<bool> shouldTerminate{false};
-    std::atomic<int> subId{0};
-    std::atomic<int> receiptId{0};
-    ConnectionHandler* connectionHandler{nullptr};
-    std::string currentUser;
-    std::map<std::string, int> subscriptionIds;  
-    std::map<std::string, std::map<std:: string, std::vector<Event>>> userEvents; 
 
-    std::string getNextMessageId() {
+
+    std::string StompClient::getNextMessageId() {
         return std::to_string(subId++);
     }
 
-    bool isLoggedIn() const {
+    bool StompClient::isLoggedIn() const {
         return connectionHandler != nullptr && !currentUser.empty();
     }
 
-    void processCommand(const std::string& command) {
+    void StompClient::processCommand(const std::string& command) {
         if(command.empty()) return;
         
         std::string cmd = command.substr(0, command.find(' '));
@@ -36,29 +29,29 @@ private:
         if(cmd == "login") {
             handleLogin(command);
         }
-        else if(!isLoggedIn()) {
+        else if(!StompClient::isLoggedIn()) {
             std::cout << "Client is not logged in" << std::endl;
             return;
         }
         else if(cmd == "join") {
-            handleJoin(command);
+            StompClient::handleJoin(command);
         }
         else if(cmd == "exit") {
-            handleExit(command);
+            StompClient::handleExit(command);
         }
         else if(cmd == "report") {
-            handleReport(command);
+            StompClient::handleReport(command);
         }
         else if(cmd == "summary") {
-            handleSummary(command);
+            StompClient::handleSummary(command);
         }
         else if(cmd == "logout") {
-            handleLogout();
+            StompClient::handleLogout();
         }
     }
 
-    void handleLogin(const std::string& command) {
-        if(isLoggedIn()) {
+    void StompClient::handleLogin(const std::string& command) {
+        if(StompClient::isLoggedIn()) {
             std::cout << "The client is already logged in, log out before trying again" << std::endl;
             return;
         }
@@ -91,7 +84,7 @@ private:
         }
 
         std::string frame = "CONNECT\naccept-version:1.2\nhost:stomp.cs.bgu.ac.il\n" 
-                           "login:" + username + "\npasscode:" + password + "\n\n^@";
+                           "login:" + username + "\npasscode:" + password + "\n\n\0";
         
         if(!connectionHandler->sendLine(frame)) {
             std::cout << "Error sending login request" << std::endl;
@@ -103,7 +96,7 @@ private:
         currentUser = username;
     }
 
-    void handleJoin(const std::string& command) {
+    void StompClient::handleJoin(const std::string& command) {
         std::istringstream iss(command);
         std::string cmd, channel;
         iss >> cmd >> channel;
@@ -122,7 +115,7 @@ private:
         std::cout << "Joined channel " + channel << std::endl;
     }
 
-    void handleExit(const std::string& command) {
+    void StompClient::handleExit(const std::string& command) {
         std::istringstream iss(command);
         std::string cmd, channel;
         iss >> cmd >> channel;
@@ -145,7 +138,7 @@ private:
         std::cout << "Exited channel " + channel << std::endl;
     }
 
-    void handleReport(const std::string& command) {
+    void StompClient::handleReport(const std::string& command) {
         std::istringstream iss(command);
         std::string cmd, filename;
         iss >> cmd >> filename;
@@ -171,7 +164,7 @@ private:
         }
     }
 
-    std::string createReportFrame(const Event& event, const std::string& channel) {
+    std::string StompClient::createReportFrame(const Event& event, const std::string& channel) {
         std::stringstream frame;
         frame << "SEND\ndestination:/" << channel << "\n"
               << "user: " << currentUser << "\n"
@@ -185,7 +178,7 @@ private:
         return frame.str();
     }
 
-    void handleSummary(const std::string& command) {
+    void StompClient::handleSummary(const std::string& command) {
         std::istringstream iss(command);
         std::string cmd, channel, user, filename;
         iss >> cmd >> channel >> user >> filename;
@@ -212,7 +205,7 @@ private:
         outFile.close();
     }
 
-    void writeSummary(std::ofstream& out, const std::string& channel, const std::vector<Event>& events) {
+    void StompClient::writeSummary(std::ofstream& out, const std::string& channel, const std::vector<Event>& events) {
         out << "Channel: " << channel << std::endl;
         
         int totalEvents = events.size();
@@ -243,7 +236,7 @@ private:
         }
     }
 
-    void handleLogout() {
+    void StompClient::handleLogout() {
         if(!isLoggedIn()) {
             std::cout << "Client is not logged in" << std::endl;
             return;
@@ -269,7 +262,7 @@ private:
         }
     }
 
-    void processServerMessage(const std::string& message) {
+    void StompClient::processServerMessage(const std::string& message) {
         if(message.find("CONNECTED") == 0) {
             std::cout << "Login successful" << std::endl;
         }
@@ -284,10 +277,7 @@ private:
         }
     }
 
-public:
-    StompClient() {}
-
-    void start() {
+    void StompClient::start() {
         std::thread keyboardThread([this]() {
             while(!shouldTerminate) {
                 std::string command;
@@ -311,13 +301,12 @@ public:
         socketThread.join();
     }
 
-    ~StompClient() {
+    StompClient::~StompClient() {
         shouldTerminate = true;
         if(connectionHandler != nullptr) {
             delete connectionHandler;
         }
     }
-};
 
 int main(int argc, char *argv[]) {
     StompClient client;
