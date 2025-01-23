@@ -7,13 +7,14 @@
 #include <vector>
 #include <map>
 #include <queue>
-// #include "../include/ConnectionHandler.h"
+#include "../include/StompProtocol.h"
 // #include "../include/event.h"
 
 
 
 
 int main(int argc, char *argv[]) {
-    // client.start();
+    StompProtocol protocol;
+    protocol.start();
 	return 0;
 }

@@ -15,9 +15,10 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
     @Override
     public Frame decodeNextByte(byte nextByte) {
         if (nextByte == '\u0000') {
-            System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8));
+            System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8)+"END");
             return popFrame();
         }
+        // System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8));
 
         pushByte(nextByte);
         return null; // not a line yet

@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <iostream>
+#include <queue>
 #include <map>
 #include <vector>
 #include <atomic>
@@ -24,6 +25,7 @@ private:
     std::string currentUser;
     std::map<std::string, int> subscriptionIds;  
     std::map<std::string, std::map<std::string, std::vector<Event>>> userEvents; 
+    std::queue<std::string> pendingMessages;
     
 public:
     std::string getNextMessageId();
