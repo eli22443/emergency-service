@@ -102,16 +102,16 @@ void StompProtocol::handleLogin(const std::string &command)
 
     std::string frame = "CONNECT\naccept-version:1.2\nhost:stomp.cs.bgu.ac.il\n"
                         "login:" +
-                        username + "\npasscode:" + password + "\n\n"+'\0';
+                        username + "\npasscode:" + password + "\n\n" + '\0';
 
-    if (!connectionHandler->sendLine(frame))
+    if (!connectionHandler->sendFrame(frame))
     {
         std::cout << "Error sending login request" << std::endl;
         delete connectionHandler;
         connectionHandler = nullptr;
         return;
     }
-
+    isConnected=true;
     currentUser = username;
 }
 
@@ -126,9 +126,9 @@ void StompProtocol::handleJoin(const std::string &command)
 
     std::string frame = "SUBSCRIBE\ndestination:/" + channel +
                         "\nid:" + std::to_string(subscriptionId) +
-                        "\nreceipt:" + std::to_string(receiptId++) + "\n\n^@";
+                        "\nreceipt:" + std::to_string(receiptId++) + "\n\n" + '\0';
 
-    if (!connectionHandler->sendLine(frame))
+    if (!connectionHandler->sendFrame(frame))
     {
         std::cout << "Error sending subscribe request" << std::endl;
         return;
@@ -150,9 +150,9 @@ void StompProtocol::handleExit(const std::string &command)
     }
 
     std::string frame = "UNSUBSCRIBE\nid:" + std::to_string(it->second) +
-                        "\nreceipt:" + std::to_string(receiptId++) + "\n\n^@";
+                        "\nreceipt:" + std::to_string(receiptId++) + "\n\n" + '\0';
 
-    if (!connectionHandler->sendLine(frame))
+    if (!connectionHandler->sendFrame(frame))
     {
         std::cout << "Error sending unsubscribe request" << std::endl;
         return;
@@ -179,7 +179,7 @@ void StompProtocol::handleReport(const std::string &command)
         {
             event.setEventOwnerUser(currentUser);
             std::string frame = createReportFrame(event, event.get_channel_name());
-            if (!connectionHandler->sendLine(frame))
+            if (!connectionHandler->sendFrame(frame))
             {
                 std::cout << "Error sending report" << std::endl;
                 return;
@@ -204,7 +204,7 @@ std::string StompProtocol::createReportFrame(const Event &event, const std::stri
           << "general information:\n"
           << "  active: " << (event.get_general_information().at("active") == "true") << "\n"
           << "  forces_arrival_at_scene: " << (event.get_general_information().at("forces_arrival_at_scene") == "true") << "\n"
-          << "description:" << event.get_description() << "\n\n^@";
+          << "description:" << event.get_description() << "\n\n" + '\0';
     return frame.str();
 }
 
@@ -283,26 +283,26 @@ void StompProtocol::handleLogout()
         return;
     }
 
-    int curReceiptId = receiptId++;
-    std::string frame = "DISCONNECT\nreceipt:" + std::to_string(curReceiptId) + "\n\n^@";
+    disconnectReceiptId = receiptId++;
+    std::string frame = "DISCONNECT\nreceipt:" + std::to_string(disconnectReceiptId) + "\n\n" + '\0';
 
-    if (!connectionHandler->sendLine(frame))
+    if (!connectionHandler->sendFrame(frame))
     {
         std::cout << "Error sending disconnect request" << std::endl;
         return;
     }
 
-    std::string response;
-    if (connectionHandler->getLine(response) &&
-        response.find("RECEIPT") != std::string::npos &&
-        response.find(curReceiptId) != std::string::npos)
-    {
+    // std::string response;
+    // if (connectionHandler->getLine(response) &&
+    //     response.find("RECEIPT") != std::string::npos &&
+    //     response.find(disconnectReceiptId) != std::string::npos)
+    // {
 
-        connectionHandler->close();
-        currentUser.clear();
-        subscriptionIds.clear();
-        std::cout << "Logged out successfully" << std::endl;
-    }
+    //     connectionHandler->close();
+    //     currentUser.clear();
+    //     subscriptionIds.clear();
+    //     std::cout << "Logged out successfully" << std::endl;
+    // }
 }
 
 void StompProtocol::processServerMessage(const std::string &message)
@@ -316,13 +316,29 @@ void StompProtocol::processServerMessage(const std::string &message)
         size_t start = message.find("message: ");
         size_t end = message.find("\n", start);
         std::cout << message.substr(start, end - start) << std::endl;
-        delete(connectionHandler);
+        delete (connectionHandler);
         connectionHandler = nullptr;
     }
     else if (message.find("MESSAGE") == 0)
     {
         Event newEvent = Event(message);
         userEvents[newEvent.getEventOwnerUser()][newEvent.get_channel_name()].push_back(newEvent);
+    }
+    else if (message.find("RECEIPT") == 0)
+    {
+        std::cout << "Receipt received" << std::endl;
+        if(message.find(std::to_string(disconnectReceiptId)) != std::string::npos) {
+            isConnected=false;
+            delete connectionHandler;
+            connectionHandler=nullptr;
+            currentUser.clear();
+            subscriptionIds.clear();
+            std::cout << "Logged out successfully" << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "Unknown message: " << message << std::endl;
     }
 }
 
@@ -334,16 +350,29 @@ void StompProtocol::start()
                 std::string command;
                 std::getline(std::cin, command);
                 processCommand(command);
-                std::string answer;
-                if (!connectionHandler->getLine(answer)) {
-                    std::cout << "Disconnected. Exiting...\n" << std::endl;
-                    break;
-                }
-                std::cout << "Reply: " << answer << std::endl;
+                // std::string answer;
+                // if (!connectionHandler->getLine(answer)) {
+                //     std::cout << "Disconnected. Exiting...\n" << std::endl;
+                //     break;
+                // }
+                // std::cout << "Reply: " << answer << std::endl;
             } });
 
     while (!shouldTerminate)
     {
+        if (connectionHandler != nullptr && isConnected)
+        {
+            std::string answer;
+            if (!connectionHandler->getLine(answer))
+            {
+                std::cout << "Disconnected. Exiting...\n"
+                          << std::endl;
+                break;
+            }
+            // std::cout << "Reply: " << answer << std::endl;
+            processServerMessage(answer);
+        }
+
         // if (!pendingMessages.empty())
         // {
         //     std::string message = pendingMessages.front();

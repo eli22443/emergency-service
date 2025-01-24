@@ -58,6 +58,8 @@ public class ConnectionsImpl<T> implements Connections<T> {
 
     public synchronized void removeActiveClient(int connectionId) {
         activeClients.remove(connectionId);
+        channels.forEach((k, v) -> v.remove(connectionId));
+        subscriptionIDs.remove(connectionId);
     }
 
     public synchronized void addSubscription(String channel, int connectionId, int subscriptionId) {

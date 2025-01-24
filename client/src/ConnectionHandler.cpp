@@ -42,7 +42,7 @@ bool ConnectionHandler::getBytes(char bytes[], unsigned int bytesToRead) {
 		if (error)
 			throw boost::system::system_error(error);
 	} catch (std::exception &e) {
-		std::cerr << "recv failed (Error: " << e.what() << ')' << std::endl;
+		std::cerr << "recv11 failed (Error: " << e.what() << ')' << std::endl;
 		return false;
 	}
 	return true;
@@ -58,14 +58,14 @@ bool ConnectionHandler::sendBytes(const char bytes[], int bytesToWrite) {
 		if (error)
 			throw boost::system::system_error(error);
 	} catch (std::exception &e) {
-		std::cerr << "recv failed (Error: " << e.what() << ')' << std::endl;
+		std::cerr << "recv22 failed (Error: " << e.what() << ')' << std::endl;
 		return false;
 	}
 	return true;
 }
 
 bool ConnectionHandler::getLine(std::string &line) {
-	return getFrameAscii(line, '\n');
+	return getFrameAscii(line, '\0');
 }
 
 bool ConnectionHandler::sendLine(std::string &line) {
@@ -92,10 +92,35 @@ bool ConnectionHandler::getFrameAscii(std::string &frame, char delimiter) {
 	return true;
 }
 
+bool ConnectionHandler::getFrame(std::string &frame) {
+	char ch;
+	// Stop when we encounter the null character.
+	try {
+		do {
+			if (!getBytes(&ch, 1)) {
+				return false;
+			}
+			frame.append(1, ch);
+		} while ('\0' != ch);
+	} catch (std::exception &e) {
+		std::cerr << "recv failed2 (Error: " << e.what() << ')' << std::endl;
+		return false;
+	}
+	return true;
+}
+
+
+
 bool ConnectionHandler::sendFrameAscii(const std::string &frame, char delimiter) {
 	bool result = sendBytes(frame.c_str(), frame.length());
 	if (!result) return false;
 	return sendBytes(&delimiter, 1);
+}
+
+bool ConnectionHandler::sendFrame(const std::string &frame) {
+	bool result = sendBytes(frame.c_str(), frame.length());
+	if (!result) return false;
+	return true;
 }
 
 // Close down the connection properly.

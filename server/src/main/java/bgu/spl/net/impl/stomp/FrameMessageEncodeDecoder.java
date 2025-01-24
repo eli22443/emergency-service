@@ -15,7 +15,7 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
     @Override
     public Frame decodeNextByte(byte nextByte) {
         if (nextByte == '\u0000') {
-            System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8)+"END");
+            System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8)+"^^^^RECIEVED");
             return popFrame();
         }
         // System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8));
@@ -27,6 +27,7 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
     @Override
     public byte[] encode(Frame message) {
         String result = message.toString();
+        // System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8)+"^^^^SENT");
         return result.getBytes(); // uses utf8 by default
     }
 

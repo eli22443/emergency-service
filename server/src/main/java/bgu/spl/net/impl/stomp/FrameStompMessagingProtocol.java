@@ -101,6 +101,8 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
                 headers.put("receipt-id", receipt);
                 connectionsImpl.send(connectionId, new Frame("RECEIPT", headers, ""));
             }
+            connectionsImpl.removeActiveClient(connectionId);
+            
             shouldTerminate = true;
         }
     }
