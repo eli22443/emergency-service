@@ -27,7 +27,7 @@ private:
     std::string currentUser;
     std::map<std::string, int> subscriptionIds;  
     std::map<std::string, std::map<std::string, std::vector<Event>>> userEvents; 
-    std::queue<std::string> pendingMessages;
+    // std::queue<std::string> pendingMessages;
 
     
 public:

@@ -59,6 +59,10 @@ void StompProtocol::processCommand(const std::string &command)
     {
         StompProtocol::handleLogout();
     }
+    else
+    {
+        std::cout << "Unknown command: " << command << std::endl;
+    }
 }
 
 void StompProtocol::handleLogin(const std::string &command)
@@ -73,6 +77,11 @@ void StompProtocol::handleLogin(const std::string &command)
     iss >> cmd >> hostPort >> username >> password;
 
     size_t colonPos = hostPort.find(':');
+
+    if(password.empty()){
+        std::cout << "login command needs 3 args: {host:port} {username} {password}" << std::endl;
+        return;
+    }
     if (colonPos == std::string::npos)
     {
         std::cout << "Invalid host:port format" << std::endl;
@@ -121,6 +130,11 @@ void StompProtocol::handleJoin(const std::string &command)
     std::string cmd, channel;
     iss >> cmd >> channel;
 
+    if(channel.empty()){
+        std::cout << "join command needs 1 args: {channel_name}" << std::endl;
+        return;
+    }
+
     int subscriptionId = subId++;
     subscriptionIds[channel] = subscriptionId;
 
@@ -143,6 +157,10 @@ void StompProtocol::handleExit(const std::string &command)
     iss >> cmd >> channel;
 
     auto it = subscriptionIds.find(channel);
+    if(channel.empty()){
+        std::cout << "exit command needs 1 args: {channel_name}" << std::endl;
+        return;
+    }
     if (it == subscriptionIds.end())
     {
         std::cout << "Not subscribed to channel " << channel << std::endl;
@@ -168,10 +186,19 @@ void StompProtocol::handleReport(const std::string &command)
     std::string cmd, filename;
     iss >> cmd >> filename;
 
+    if(filename.empty()){
+        std::cout << "report command needs 1 args: {file_name}" << std::endl;
+        return;
+    }
+
     try
     {
         names_and_events events = parseEventsFile(filename);
 
+        if(subscriptionIds.find(events.channel_name) == subscriptionIds.end()){
+            std::cout << "You are not registered to channel " << events.channel_name << std::endl;
+            return;
+        }
         std::sort(events.events.begin(), events.events.end(), [](const Event &a, const Event &b)
                   { return a.get_date_time() < b.get_date_time(); });
 
@@ -196,15 +223,15 @@ void StompProtocol::handleReport(const std::string &command)
 std::string StompProtocol::createReportFrame(const Event &event, const std::string &channel)
 {
     std::stringstream frame;
-    frame << "SEND\ndestination:/" << channel << "\n"
+    frame << "SEND\ndestination:/" << channel << "\n\n"
           << "user: " << currentUser << "\n"
           << "city: " << event.get_city() << "\n"
           << "event name: " << event.get_name() << "\n"
           << "date time: " << event.get_date_time() << "\n"
           << "general information:\n"
-          << "  active: " << (event.get_general_information().at("active") == "true") << "\n"
-          << "  forces_arrival_at_scene: " << (event.get_general_information().at("forces_arrival_at_scene") == "true") << "\n"
-          << "description:" << event.get_description() << "\n\n" + '\0';
+          << "\tactive: " << (bool)(event.get_general_information().at("active") == "true") << "\n"
+          << "\tforces_arrival_at_scene: " << (bool)(event.get_general_information().at("forces_arrival_at_scene") == "true") << "\n"
+          << "description:" << event.get_description() << "\n" << '\0';
     return frame.str();
 }
 
@@ -215,6 +242,11 @@ void StompProtocol::handleSummary(const std::string &command)
     iss >> cmd >> channel >> user >> filename;
 
     auto userIt = userEvents.find(user);
+
+    if(filename.empty()){
+        std::cout << "summary command needs 3 args: {channel_name} {user_name} {file_name}" << std::endl;
+        return;
+    }
     if (userIt == userEvents.end())
     {
         std::cout << "No events found for user " << user << std::endl;
@@ -291,18 +323,6 @@ void StompProtocol::handleLogout()
         std::cout << "Error sending disconnect request" << std::endl;
         return;
     }
-
-    // std::string response;
-    // if (connectionHandler->getLine(response) &&
-    //     response.find("RECEIPT") != std::string::npos &&
-    //     response.find(disconnectReceiptId) != std::string::npos)
-    // {
-
-    //     connectionHandler->close();
-    //     currentUser.clear();
-    //     subscriptionIds.clear();
-    //     std::cout << "Logged out successfully" << std::endl;
-    // }
 }
 
 void StompProtocol::processServerMessage(const std::string &message)
@@ -321,6 +341,9 @@ void StompProtocol::processServerMessage(const std::string &message)
     }
     else if (message.find("MESSAGE") == 0)
     {
+        size_t start = message.find("\n\n");
+        size_t end = message.size()-start;
+        std::string messageBody = message.substr(start + 2, 5);
         Event newEvent = Event(message);
         userEvents[newEvent.getEventOwnerUser()][newEvent.get_channel_name()].push_back(newEvent);
     }
@@ -350,12 +373,6 @@ void StompProtocol::start()
                 std::string command;
                 std::getline(std::cin, command);
                 processCommand(command);
-                // std::string answer;
-                // if (!connectionHandler->getLine(answer)) {
-                //     std::cout << "Disconnected. Exiting...\n" << std::endl;
-                //     break;
-                // }
-                // std::cout << "Reply: " << answer << std::endl;
             } });
 
     while (!shouldTerminate)
@@ -372,26 +389,9 @@ void StompProtocol::start()
             // std::cout << "Reply: " << answer << std::endl;
             processServerMessage(answer);
         }
-
-        // if (!pendingMessages.empty())
-        // {
-        //     std::string message = pendingMessages.front();
-        //     pendingMessages.pop();
-        //     processCommand(message);
-        // }
-        // if (connectionHandler != nullptr)
-        // {
-        //     std::string message=pendingMessages.front();
-        //     pendingMessages.pop();
-        //     if (connectionHandler->getLine(message))
-        //     {
-        //         processServerMessage(message);
-        //     }
-        // }
     }
 
-    keyboardThread.join();
-    // socketThread.join();
+    // keyboardThread.join();
 }
 
 StompProtocol::~StompProtocol()

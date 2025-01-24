@@ -61,6 +61,7 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
             // headers.put("receipt-id", receipt);
             // connections.send(connectionId, new Frame("RECEIPT", headers, ""));
             // }
+            sendReceipt(message.getHeaders().get("receipt"));
             String topic = message.getHeaders().get("destination");
             String body = message.getBody();
 
@@ -69,6 +70,7 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
             headers.put("destination", topic);
 
             for (Integer id : connectionsImpl.getChannels().get(topic)) {
+                if(id == connectionId) continue;
                 headers.put("subscription", connectionsImpl.getSubscriptionIDs(id).get(topic) + "");
                 connectionsImpl.send(id, new Frame("MESSAGE", headers, body));
             }
@@ -95,17 +97,19 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
 
         }
         if (message.getCommand().equals("DISCONNECT")) {
-            String receipt = message.getHeaders().get("receipt");
-            if (receipt != null) {
-                Map<String, String> headers = new ConcurrentHashMap<>();
-                headers.put("receipt-id", receipt);
-                connectionsImpl.send(connectionId, new Frame("RECEIPT", headers, ""));
-            }
+            sendReceipt(message.getHeaders().get("receipt"));
             connectionsImpl.removeActiveClient(connectionId);
-            
             shouldTerminate = true;
         }
     }
+
+    public void sendReceipt(String receipt) {
+        if (receipt != null) {
+            Map<String, String> headers = new ConcurrentHashMap<>();
+            headers.put("receipt-id", receipt);
+            connectionsImpl.send(connectionId, new Frame("RECEIPT", headers, ""));
+        }
+}
 
     @Override
     public boolean shouldTerminate() {
