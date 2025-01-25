@@ -40,10 +40,8 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
 
             if (connectionsImpl.getPassword(username) != null) {
                 if (!password.equals(connectionsImpl.getPassword(username))) {
-                    headers.put("message", "wrong password");
-                    connectionsImpl.send(connectionId, new Frame("ERROR", headers,
-                            "The message :\n----\n" + message.toString().substring(0, message.toString().length()-2) + "----\n" +
-                                    "Contains bad login details"));
+                    errorLogin1(message,username);
+                    shouldTerminate = true;
                 }else{
                     headers.put("version", "1.2");
                     connectionsImpl.send(connectionId, new Frame("CONNECTED", headers, ""));
@@ -111,15 +109,23 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
         }
 }
 
+    public void errorLogin1(Frame message, String username) {
+        Map<String, String> headers = new ConcurrentHashMap<>();
+        headers.put("message", "Password does not match username");
+        connectionsImpl.send(connectionId, new Frame("ERROR", headers,
+                "The message:\n----\n" + message.toString().substring(0, message.toString().length()-2) + "----\n" +
+                        "User "+username+"'s password is diffrent than what you inserted."));
+}
+
     @Override
     public boolean shouldTerminate() {
         return shouldTerminate;
     }
 
-    public void removeAllSubscriptions() {
-        for (String topic : subscribedTopics) {
-            connectionsImpl.removeSubscription(topic, connectionId);
-        }
-    }
+    // public void removeAllSubscriptions() {
+    //     for (String topic : subscribedTopics) {
+    //         connectionsImpl.removeSubscription(topic, connectionId);
+    //     }
+    // }
 
 }

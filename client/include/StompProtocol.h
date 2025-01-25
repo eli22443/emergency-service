@@ -43,8 +43,8 @@ public:
     void writeSummary(std::ofstream& out, const std::string& channel, const std::vector<Event>& events);
     void handleLogout();
     void processServerMessage(const std::string& message);
+    void dissconnect();
     std::string epoch_to_date(std::time_t timestamp);
-
 
     StompProtocol();
     ~StompProtocol();

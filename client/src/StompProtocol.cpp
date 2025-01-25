@@ -7,6 +7,7 @@
 #include <cstring>
 #include "../include/json.hpp"
 #include "../include/StompProtocol.h"
+#include "StompProtocol.h"
 
 StompProtocol::StompProtocol()
     : connectionHandler(nullptr), subId(0), receiptId(0), shouldTerminate(false) {}
@@ -338,7 +339,7 @@ void StompProtocol::handleLogout()
 {
     if (!isLoggedIn())
     {
-        std::cout << "Client is not logged in" << std::endl;
+        std::cout << "please login first" << std::endl;
         return;
     }
 
@@ -360,11 +361,12 @@ void StompProtocol::processServerMessage(const std::string &message)
     }
     else if (message.find("ERROR") == 0)
     {
-        size_t start = message.find("message: ");
-        size_t end = message.find("\n", start);
-        std::cout << message.substr(start, end - start) << std::endl;
-        delete (connectionHandler);
-        connectionHandler = nullptr;
+        // size_t start = message.find("message: ");
+        // size_t end = message.find("\n", start);
+        // std::cout << message.substr(start, end - start) << std::endl;
+        std::cout << message << std::endl;
+
+        StompProtocol::dissconnect();
     }
     else if (message.find("MESSAGE") == 0)
     {
@@ -398,11 +400,12 @@ void StompProtocol::processServerMessage(const std::string &message)
         std::cout << "Receipt received" << std::endl;
         if (message.find(std::to_string(disconnectReceiptId)) != std::string::npos)
         {
-            isConnected = false;
-            delete connectionHandler;
-            connectionHandler = nullptr;
-            currentUser.clear();
-            subscriptionIds.clear();
+            // isConnected = false;
+            // delete connectionHandler;
+            // connectionHandler = nullptr;
+            // currentUser.clear();
+            // subscriptionIds.clear();
+            StompProtocol::dissconnect();
             std::cout << "Logged out successfully" << std::endl;
         }
     }
@@ -410,6 +413,13 @@ void StompProtocol::processServerMessage(const std::string &message)
     {
         std::cout << "Unknown message: " << message << std::endl;
     }
+}
+void StompProtocol::dissconnect() {
+            isConnected = false;
+            delete connectionHandler;
+            connectionHandler = nullptr;
+            currentUser.clear();
+            subscriptionIds.clear();
 }
 
 void StompProtocol::start()
