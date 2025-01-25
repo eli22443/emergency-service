@@ -1,5 +1,3 @@
-
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -61,7 +59,7 @@ void StompProtocol::processCommand(const std::string &command)
     }
     else
     {
-        std::cout << "Unknown command: " << command << std::endl;
+        std::cout << "Illegal command, please try a different one" << std::endl;
     }
 }
 
@@ -78,7 +76,13 @@ void StompProtocol::handleLogin(const std::string &command)
 
     size_t colonPos = hostPort.find(':');
 
-    if(password.empty()){
+    if(isConnected) {
+        std::cout << "user already logged in" << std::endl;
+        return;
+    }
+
+    if (password.empty())
+    {
         std::cout << "login command needs 3 args: {host:port} {username} {password}" << std::endl;
         return;
     }
@@ -120,7 +124,7 @@ void StompProtocol::handleLogin(const std::string &command)
         connectionHandler = nullptr;
         return;
     }
-    isConnected=true;
+    isConnected = true;
     currentUser = username;
 }
 
@@ -130,7 +134,8 @@ void StompProtocol::handleJoin(const std::string &command)
     std::string cmd, channel;
     iss >> cmd >> channel;
 
-    if(channel.empty()){
+    if (channel.empty())
+    {
         std::cout << "join command needs 1 args: {channel_name}" << std::endl;
         return;
     }
@@ -138,7 +143,7 @@ void StompProtocol::handleJoin(const std::string &command)
     int subscriptionId = subId++;
     subscriptionIds[channel] = subscriptionId;
 
-    std::string frame = "SUBSCRIBE\ndestination:/" + channel +
+    std::string frame = "SUBSCRIBE\ndestination:" + channel +
                         "\nid:" + std::to_string(subscriptionId) +
                         "\nreceipt:" + std::to_string(receiptId++) + "\n\n" + '\0';
 
@@ -157,7 +162,8 @@ void StompProtocol::handleExit(const std::string &command)
     iss >> cmd >> channel;
 
     auto it = subscriptionIds.find(channel);
-    if(channel.empty()){
+    if (channel.empty())
+    {
         std::cout << "exit command needs 1 args: {channel_name}" << std::endl;
         return;
     }
@@ -186,7 +192,8 @@ void StompProtocol::handleReport(const std::string &command)
     std::string cmd, filename;
     iss >> cmd >> filename;
 
-    if(filename.empty()){
+    if (filename.empty())
+    {
         std::cout << "report command needs 1 args: {file_name}" << std::endl;
         return;
     }
@@ -195,7 +202,8 @@ void StompProtocol::handleReport(const std::string &command)
     {
         names_and_events events = parseEventsFile(filename);
 
-        if(subscriptionIds.find(events.channel_name) == subscriptionIds.end()){
+        if (subscriptionIds.find(events.channel_name) == subscriptionIds.end())
+        {
             std::cout << "You are not registered to channel " << events.channel_name << std::endl;
             return;
         }
@@ -223,15 +231,16 @@ void StompProtocol::handleReport(const std::string &command)
 std::string StompProtocol::createReportFrame(const Event &event, const std::string &channel)
 {
     std::stringstream frame;
-    frame << "SEND\ndestination:/" << channel << "\n\n"
+    frame << "SEND\ndestination:" << channel << "\n\n"
           << "user: " << currentUser << "\n"
           << "city: " << event.get_city() << "\n"
           << "event name: " << event.get_name() << "\n"
           << "date time: " << event.get_date_time() << "\n"
           << "general information:\n"
-          << "\tactive: " << (bool)(event.get_general_information().at("active") == "true") << "\n"
-          << "\tforces_arrival_at_scene: " << (bool)(event.get_general_information().at("forces_arrival_at_scene") == "true") << "\n"
-          << "description:" << event.get_description() << "\n" << '\0';
+          << "\tactive: " << (event.get_general_information().at("active"))<< "\n"
+          << "\tforces_arrival_at_scene: " << (event.get_general_information().at("forces_arrival_at_scene")) << "\n"
+          << "description:" << event.get_description() << "\n"
+          << '\0';
     return frame.str();
 }
 
@@ -243,25 +252,31 @@ void StompProtocol::handleSummary(const std::string &command)
 
     auto userIt = userEvents.find(user);
 
-    if(filename.empty()){
+    if (filename.empty())
+    {
         std::cout << "summary command needs 3 args: {channel_name} {user_name} {file_name}" << std::endl;
         return;
     }
-    if (userIt == userEvents.end())
-    {
-        std::cout << "No events found for user " << user << std::endl;
+
+    if(subscriptionIds.find(channel) == subscriptionIds.end()) {
+        std::cout << "you are not subscribed to channel " << channel << std::endl;
         return;
     }
+    // if (userIt == userEvents.end())
+    // {
+    //     std::cout << "No events found for user " << user << std::endl;
+    //     return;
+    // }
 
     auto channelIt = userIt->second.find(channel);
-    if (channelIt == userIt->second.end())
-    {
-        std::cout << "No events found for channel " << channel << " for user " << user << std::endl;
-        return;
-    }
+    // if (channelIt == userIt->second.end())
+    // {
+    //     std::cout << "No events found for channel " << channel << " for user " << user << std::endl;
+    //     return;
+    // }
 
     std::ofstream outFile(filename);
-    if (!outFile.is_open())
+    if (!outFile)
     {
         std::cout << "Error opening output file" << std::endl;
         return;
@@ -273,7 +288,7 @@ void StompProtocol::handleSummary(const std::string &command)
 
 void StompProtocol::writeSummary(std::ofstream &out, const std::string &channel, const std::vector<Event> &events)
 {
-    out << "Channel: " << channel << std::endl;
+    out << "Channel " << channel << std::endl;
 
     int totalEvents = events.size();
     int activeEvents = 0;
@@ -292,20 +307,32 @@ void StompProtocol::writeSummary(std::ofstream &out, const std::string &channel,
 
     out << "Stats:" << std::endl;
     out << "Total: " << totalEvents << std::endl;
-    out << "Active: " << activeEvents << std::endl;
-    out << "Forces arrival at scene: " << forceArrivals << std::endl;
+    out << "active: " << activeEvents << std::endl;
+    out << "forces arrival at scene: " << forceArrivals << std::endl << std::endl;
 
-    int numReport = 0;
-    out << "\nEvent Reports:" << std::endl;
+    int numReport = 1;
+    out << "Event Reports:" << std::endl << std::endl << std::endl;
     for (const Event &event : events)
     {
-        out << "Report_" << numReport++ << std::endl;
-        out << "   city: " << event.get_city() << std::endl;
-        out << "   date time: " << event.get_date_time() << std::endl;
-        out << "   event name: " << event.get_name() << std::endl;
-        out << "   summery: " << event.get_description() << std::endl;
+        out << "Report_" << numReport++ << ":" << std::endl;
+        out << "city: " << event.get_city() << std::endl;
+        out << "date time: " << epoch_to_date(event.get_date_time()) << std::endl;
+        out << "event name: " << event.get_name() << std::endl;
+        out << "summary: " << event.get_description().substr(0,27)<< "..." << std::endl << std::endl;
     }
 }
+
+std::string StompProtocol::epoch_to_date(std::time_t timestamp) {
+    // Convert timestamp to std::tm
+    std::tm* tm = std::localtime(&timestamp);
+    
+    // Create a string stream to format the time as needed
+    std::ostringstream oss;
+    oss << std::put_time(tm, "%d/%m/%Y %H:%M:%S"); // Format: DD/MM/YYYY HH:MM:SS
+    
+    return oss.str();
+}
+
 
 void StompProtocol::handleLogout()
 {
@@ -341,19 +368,39 @@ void StompProtocol::processServerMessage(const std::string &message)
     }
     else if (message.find("MESSAGE") == 0)
     {
-        size_t start = message.find("\n\n");
-        size_t end = message.size()-start;
-        std::string messageBody = message.substr(start + 2, 5);
+        // size_t start = message.find("\n\n");
+        // size_t end = message.size() - start;
+        // std::string messageBody = message.substr(start + 2, 5);
         Event newEvent = Event(message);
+        // std::istringstream stream(message);
+        // std::string line;
+        // std::string subscriptionId;
+        // while (std::getline(stream, line))
+        // {
+        //     if (line.find("subscription:") == 0)
+        //     {
+        //         subscriptionId = line.substr(std::string("subscription:").length());
+        //         break;
+        //     }
+        // }
+        // for (const auto &pair : subscriptionIds)
+        // {
+        //     if (std::to_string(pair.second) == subscriptionId)
+        //     {
+        //         newEvent.set_channel_name(pair.first);
+        //         break;
+        //     }
+        // }
         userEvents[newEvent.getEventOwnerUser()][newEvent.get_channel_name()].push_back(newEvent);
     }
     else if (message.find("RECEIPT") == 0)
     {
         std::cout << "Receipt received" << std::endl;
-        if(message.find(std::to_string(disconnectReceiptId)) != std::string::npos) {
-            isConnected=false;
+        if (message.find(std::to_string(disconnectReceiptId)) != std::string::npos)
+        {
+            isConnected = false;
             delete connectionHandler;
-            connectionHandler=nullptr;
+            connectionHandler = nullptr;
             currentUser.clear();
             subscriptionIds.clear();
             std::cout << "Logged out successfully" << std::endl;
@@ -380,7 +427,7 @@ void StompProtocol::start()
         if (connectionHandler != nullptr && isConnected)
         {
             std::string answer;
-            if (!connectionHandler->getLine(answer))
+            if (!connectionHandler->getFrame(answer))
             {
                 std::cout << "Disconnected. Exiting...\n"
                           << std::endl;

@@ -92,6 +92,9 @@ Event::Event(const std::string &frame_body): channel_name(""), city(""),
             else if(key == "event name") {
                 name = val;
             }
+            else if(key == "destination") {//channel name?????
+                channel_name = val.at(0) == '/' ? val.substr(1) : val;
+            }
             else if(key == "date time") {
                 date_time = std::stoi(val);
             }
@@ -151,4 +154,8 @@ void split_str(const string &s, char delim, vector<string> &elems) {
     while (getline(ss, item, delim)) {
         elems.push_back(item);
     }
+}
+
+void Event::set_channel_name(std::string channel_name) {
+    this->channel_name = channel_name;
 }
