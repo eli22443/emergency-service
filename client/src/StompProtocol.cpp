@@ -237,13 +237,13 @@ std::string StompProtocol::createReportFrame(const Event &event, const std::stri
 {
     std::stringstream frame;
     frame << "SEND\ndestination:" << channel << "\n\n"
-          << "user: " << currentUser << "\n"
-          << "city: " << event.get_city() << "\n"
-          << "event name: " << event.get_name() << "\n"
-          << "date time: " << event.get_date_time() << "\n"
+          << "user:" << currentUser << "\n"
+          << "city:" << event.get_city() << "\n"
+          << "event name:" << event.get_name() << "\n"
+          << "date time:" << event.get_date_time() << "\n"
           << "general information:\n"
-          << "\tactive: " << (event.get_general_information().at("active"))<< "\n"
-          << "\tforces_arrival_at_scene: " << (event.get_general_information().at("forces_arrival_at_scene")) << "\n"
+          << "\tactive:" << (event.get_general_information().at("active"))<< "\n"
+          << "\tforces_arrival_at_scene:" << (event.get_general_information().at("forces_arrival_at_scene")) << "\n"
           << "description:" << event.get_description() << "\n"
           << '\0';
     return frame.str();

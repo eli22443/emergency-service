@@ -103,10 +103,12 @@ Event::Event(const std::string &frame_body): channel_name(""), city(""),
                 continue;
             }
             else if(key == "description") {
-                while(getline(ss,line,'\n')) {
-                    eventDescription += line + "\n";
-                }
-                description = eventDescription;
+                // while(getline(ss,line,'\n')) {
+                //     eventDescription += line + "\n";
+                // }
+                // description = eventDescription;
+                inGeneralInformation = false;
+                description = val;
             }
 
             if(inGeneralInformation) {
