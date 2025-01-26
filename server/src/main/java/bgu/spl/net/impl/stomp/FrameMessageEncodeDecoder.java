@@ -15,10 +15,9 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
     @Override
     public Frame decodeNextByte(byte nextByte) {
         if (nextByte == '\u0000') {
-            System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8)+"^^^^RECIEVED");
+            // System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8)+"^^^^RECIEVED");
             return popFrame();
         }
-        // System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8));
 
         pushByte(nextByte);
         return null; // not a line yet
@@ -27,7 +26,6 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
     @Override
     public byte[] encode(Frame message) {
         String result = message.toString();
-        // System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8)+"^^^^SENT");
         return result.getBytes(); // uses utf8 by default
     }
 
@@ -95,13 +93,10 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
 
     String getBody(StringBuilder str) {
         String body = "";
-        // char c = str.charAt(0);
         while (str.length() > 0) {
             body += str.charAt(0);
             str = str.deleteCharAt(0);
-            // c = str.charAt(0);  
         }
-        // str = str.deleteCharAt(0);
         return body;
     }
 

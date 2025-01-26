@@ -18,16 +18,15 @@
 
 class StompProtocol {
 private:
-    std::atomic<bool> shouldTerminate{false};
-    std::atomic<bool> isConnected{false};
-    std::atomic<int> disconnectReceiptId{-1};
-    std::atomic<int> subId{0};
-    std::atomic<int> receiptId{0};
-    ConnectionHandler* connectionHandler{nullptr};
+    std::atomic<bool> shouldTerminate;
+    std::atomic<bool> isConnected;
+    std::atomic<int> disconnectReceiptId;
+    std::atomic<int> subId;
+    std::atomic<int> receiptId;
+    ConnectionHandler* connectionHandler;
     std::string currentUser;
     std::map<std::string, int> subscriptionIds;  
     std::map<std::string, std::map<std::string, std::vector<Event>>> userEvents; 
-    // std::queue<std::string> pendingMessages;
 
     
 public:

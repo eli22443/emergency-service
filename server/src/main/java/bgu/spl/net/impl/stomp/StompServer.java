@@ -5,19 +5,20 @@ import bgu.spl.net.srv.Server;
 public class StompServer {
 
     public static void main(String[] args) {
-        // TODO: implement this
-        // Server.threadPerClient(
-        //         7778, // port
-        //         FrameStompMessagingProtocol::new, // protocol factory
-        //         FrameMessageEncodeDecoder::new // message encoder decoder factory
-        // ).serve();
-
-        Server.reactor(
-        Runtime.getRuntime().availableProcessors(),
-        7778, //port
-        () -> new FrameStompMessagingProtocol(), //protocol factory
-        FrameMessageEncodeDecoder::new //message encoder decoder factory
-        ).serve();
-
+        if(args[1].equals("tpc")){
+            Server.threadPerClient(
+                    Integer.parseInt(args[0]), // port
+                    FrameStompMessagingProtocol::new, // protocol factory
+                    FrameMessageEncodeDecoder::new // message encoder decoder factory
+            ).serve();}
+        if(args[1].equals("reactor")){
+            Server.reactor(
+                    Runtime.getRuntime().availableProcessors(), // nthreads
+                    Integer.parseInt(args[0]), // port
+                    FrameStompMessagingProtocol::new, // protocol factory
+                    FrameMessageEncodeDecoder::new // message encoder decoder factory
+            ).serve();}
+        else
+            System.out.println("Invalid input");
     }
 }

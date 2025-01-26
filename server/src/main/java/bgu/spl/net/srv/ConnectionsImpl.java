@@ -8,6 +8,7 @@ public class ConnectionsImpl<T> implements Connections<T> {
     // saves info about the active clients (login id, subscribed topics, etc.)
 
     private Map<Integer, ConnectionHandler<T>> activeClients = new ConcurrentHashMap<>();
+    private Map<Integer, String> activeClientsNames = new ConcurrentHashMap<>();
     private Map<String, Set<Integer>> channels = new ConcurrentHashMap<>();
     private Map<String, String> logins = new ConcurrentHashMap<>();
     private Map<Integer, Map<String, Integer>> subscriptionIDs = new ConcurrentHashMap<>();
@@ -60,6 +61,7 @@ public class ConnectionsImpl<T> implements Connections<T> {
         activeClients.remove(connectionId);
         channels.forEach((k, v) -> v.remove(connectionId));
         subscriptionIDs.remove(connectionId);
+        activeClientsNames.remove(connectionId);
     }
 
     public synchronized void addSubscription(String channel, int connectionId, int subscriptionId) {
@@ -111,5 +113,13 @@ public class ConnectionsImpl<T> implements Connections<T> {
 
     public synchronized void addLogin(String username, String password) {
         logins.put(username, password);
+    }
+
+    public boolean isActiveClient(String username) {
+        return activeClientsNames.containsValue(username);
+    }
+
+    public void addActiveClientName(String username, int connectionId) {
+        activeClientsNames.put(connectionId, username);
     }
 }

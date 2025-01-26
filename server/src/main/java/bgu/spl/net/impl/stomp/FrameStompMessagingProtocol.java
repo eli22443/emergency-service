@@ -19,10 +19,6 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
     private int connectionId; // Unique ID for this connection
     private ConnectionsImpl<Frame> connectionsImpl; // Reference to manage connections
 
-    // private String username=null; // Current logged-in username (or null if not
-    // logged in)
-    // private String password=null; // Current logged-in password (or null if not
-    // logged in)
     private final Set<String> subscribedTopics = new HashSet<>(); // Topics this client subscribed to
     private final Map<Integer, String> receipts = new ConcurrentHashMap<>(); // To manage receipt IDs
     private final Map<Integer, String> subscriptions = new ConcurrentHashMap<>(); // To manage subscriptions
@@ -46,6 +42,7 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
                 if (header == null) {
                     errorLogin2(message);
                     shouldTerminate = true;
+                    return;
                 }
             }
 
@@ -54,29 +51,25 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
                     errorLogin1(message,username);
                     shouldTerminate = true;
                 }else{
+                    if(connectionsImpl.isActiveClient(username)){
+                        errorLogin3(message, username);
+                        shouldTerminate = true;
+                        return;
+                    }
+                    connectionsImpl.addActiveClientName(username, connectionId);
                     headers.put("version", "1.2");
                     connectionsImpl.send(connectionId, new Frame("CONNECTED", headers, ""));
                 }
             } else {
                 connectionsImpl.addLogin(username, password);
+                connectionsImpl.addActiveClientName(username, connectionId);
                 headers.put("version", "1.2");
                 connectionsImpl.send(connectionId, new Frame("CONNECTED", headers, ""));
             }
         }
         if (message.getCommand().equals("SEND")) {
-            // String receipt = message.getHeaders().get("receipt");
-            // if(receipt != null) {
-            // Map<String, String> headers = new ConcurrentHashMap<>();
-            // headers.put("receipt-id", receipt);
-            // connections.send(connectionId, new Frame("RECEIPT", headers, ""));
-            // }
             sendReceipt(message.getHeaders().get("receipt"));
             String topic = message.getHeaders().get("destination");
-            if (!subscribedTopics.contains(topic)) {
-                errorLogin3(message, topic);
-                shouldTerminate = true; 
-                return;
-            }
             String body = message.getBody();
 
             Map<String, String> headers = new ConcurrentHashMap<>();
@@ -91,6 +84,7 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
 
         }
         if (message.getCommand().equals("SUBSCRIBE")) {
+            sendReceipt(message.getHeaders().get("receipt"));
             String topic = message.getHeaders().get("destination");
             int subscriptionId = Integer.parseInt(message.getHeaders().get("id"));
             subscriptions.put(subscriptionId, topic);
@@ -98,12 +92,7 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
             connectionsImpl.addSubscription(topic, connectionId, subscriptionId);
         }
         if (message.getCommand().equals("UNSUBSCRIBE")) {
-            // String receipt = message.getHeaders().get("receipt");
-            // if(receipt != null) {
-            // Map<String, String> headers = new ConcurrentHashMap<>();
-            // headers.put("receipt-id", receipt);
-            // connections.send(connectionId, new Frame("RECEIPT", headers, ""));
-            // }
+            sendReceipt(message.getHeaders().get("receipt"));
             int subscriptionId = Integer.parseInt(message.getHeaders().get("id"));
             String topic = subscriptions.remove(subscriptionId);
             subscribedTopics.remove(topic);
@@ -117,34 +106,35 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
         }
     }
 
-    public void sendReceipt(String receipt) {
-        if (receipt != null) {
+    public void sendReceipt(String receipt_id) {
+        if (receipt_id != null) {
             Map<String, String> headers = new ConcurrentHashMap<>();
-            headers.put("receipt-id", receipt);
+            headers.put("receipt-id", receipt_id);
             connectionsImpl.send(connectionId, new Frame("RECEIPT", headers, ""));
         }
 }
 
     public void errorLogin1(Frame message, String username) {//un- match password
-        Map<String, String> headers = new ConcurrentHashMap<>();
-        headers.put("message", "Password does not match username");
-        connectionsImpl.send(connectionId, new Frame("ERROR", headers,
+        Map<String, String> errorHeaders = new ConcurrentHashMap<>();
+        errorHeaders.put("message", "Password does not match username");
+        connectionsImpl.send(connectionId, new Frame("ERROR", errorHeaders,
                 "The message:\n----\n" + message.toString().substring(0, message.toString().length()-2) + "----\n" +
                         "User "+username+"'s password is diffrent than what you inserted."));
 }
     public void errorLogin2(Frame message){//one of the header is missing
-        Map<String, String> headers = new ConcurrentHashMap<>();
-        headers.put("message", "One of the header is missing ");
-        connectionsImpl.send(connectionId, new Frame("ERROR", headers,
+        Map<String, String> errorHeaders = new ConcurrentHashMap<>();
+        errorHeaders.put("message", "One of the header is missing ");
+        connectionsImpl.send(connectionId, new Frame("ERROR", errorHeaders,
                 "The message:\n----\n" + message.toString().substring(0, message.toString().length()-2) + "----\n" +
                         " Check that you have entered all the required details."));
     }
-    public void errorLogin3(Frame message, String topic){// if client isnt subscibed 
-         Map<String, String> errorHeaders = new HashMap<>();
-         errorHeaders.put("message", "You are not subscribed to the topic: " + topic);
-         connectionsImpl.send(connectionId, new Frame("ERROR", errorHeaders, 
-                 "You cannot send messages to a topic you are not subscribed to."));
-    }
+    public void errorLogin3(Frame message, String username){// if another client is already logged in 
+        Map<String, String> errorHeaders = new HashMap<>();
+        errorHeaders.put("message", "User already logged in");
+        connectionsImpl.send(connectionId, new Frame("ERROR", errorHeaders,
+        "The message:\n----\n" + message.toString().substring(0, message.toString().length()-2) + "----\n" + 
+                "User "+username+" is already logged in somewhere else."));
+}
     
 
     @Override
@@ -152,10 +142,5 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
         return shouldTerminate;
     }
 
-    // public void removeAllSubscriptions() {
-    //     for (String topic : subscribedTopics) {
-    //         connectionsImpl.removeSubscription(topic, connectionId);
-    //     }
-    // }
 
 }
