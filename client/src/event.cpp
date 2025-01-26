@@ -8,11 +8,6 @@
 #include <sstream>
 #include <cstring>
 
-<<<<<<< HEAD
-
-=======
-// #include "../include/keyboardInput.h"
->>>>>>> d02c4a6c92351b8a600c7b8ccd6ac1143ac3b12d
 
 using namespace std;
 using json = nlohmann::json;
