@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <queue>
+<<<<<<< HEAD
 #include "../include/ConnectionHandler.h"
 #include "../include/event.h"
 
@@ -325,3 +326,16 @@ int main(int argc, char *argv[]) {
     return 0;
 	
 	}
+=======
+#include "../include/StompProtocol.h"
+// #include "../include/event.h"
+
+
+
+
+int main(int argc, char *argv[]) {
+    StompProtocol protocol;
+    protocol.start();
+	return 0;
+}
+>>>>>>> d02c4a6c92351b8a600c7b8ccd6ac1143ac3b12d

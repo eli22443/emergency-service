@@ -14,14 +14,14 @@ import java.net.Socket;
 
 public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler<T> {
 
-    private final StompMessagingProtocol <T> protocol;
+    private final StompMessagingProtocol<T> protocol;
     private final MessageEncoderDecoder<T> encdec;
     private final Socket sock;
     private BufferedInputStream in;
     private BufferedOutputStream out;
     private volatile boolean connected = true;
 
-    public BlockingConnectionHandler(Socket sock, MessageEncoderDecoder<T> reader, StompMessagingProtocol <T> protocol) {
+    public BlockingConnectionHandler(Socket sock, MessageEncoderDecoder<T> reader, StompMessagingProtocol<T> protocol) {
         this.sock = sock;
         this.encdec = reader;
         this.protocol = protocol;
@@ -29,7 +29,7 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
 
     @Override
     public void run() {
-        try (Socket sock = this.sock) { //just for automatic closing
+        try (Socket sock = this.sock) { // just for automatic closing
             int read;
 
             in = new BufferedInputStream(sock.getInputStream());
@@ -39,11 +39,6 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
                 T nextMessage = encdec.decodeNextByte((byte) read);
                 if (nextMessage != null) {
                     protocol.process(nextMessage);
-                    // T response = protocol.process(nextMessage);
-                    // if (response != null) {
-                    //     out.write(encdec.encode(response));
-                    //     out.flush();
-                    // }
                 }
             }
 
@@ -61,8 +56,13 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
 
     @Override
     public void send(T msg) {
-        FrameMessageEncodeDecoder encodeDecoder = new FrameMessageEncodeDecoder();
-        byte[] encodedMsg = encodeDecoder.encode((Frame) msg);
-
+        if (msg != null) {
+            try {
+                out.write(encdec.encode(msg));
+                out.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

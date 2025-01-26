@@ -1,5 +1,6 @@
 package bgu.spl.net.impl.stomp;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -14,48 +15,117 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
     private boolean shouldTerminate = false;
 
     private int connectionId; // Unique ID for this connection
-    private Connections<Frame> connections; // Reference to manage connections
+    private ConnectionsImpl<Frame> connectionsImpl; // Reference to manage connections
 
-    private String username; // Current logged-in username (or null if not logged in)
-    private String password; // Current logged-in password (or null if not logged in)
+    // private String username=null; // Current logged-in username (or null if not
+    // logged in)
+    // private String password=null; // Current logged-in password (or null if not
+    // logged in)
     private final Set<String> subscribedTopics = new HashSet<>(); // Topics this client subscribed to
     private final Map<Integer, String> receipts = new ConcurrentHashMap<>(); // To manage receipt IDs
     private final Map<Integer, String> subscriptions = new ConcurrentHashMap<>(); // To manage subscriptions
 
-
     @Override
     public void start(int connectionId, Connections<Frame> connections) {
         this.connectionId = connectionId;
-        this.connections = connections;
+        this.connectionsImpl = (ConnectionsImpl<Frame>) connections;
     }
 
     @Override
     public void process(Frame message) {
-        if(message.getCommand().equals("CONNECT")) {
-            username = message.getHeaders().get("login");
-            password = message.getHeaders().get("passcode");
-        }if(message.getCommand().equals("SEND")) {
-            // Do something with the message
-        }if(message.getCommand().equals("SUBSCRIBE")) {
+        if (message.getCommand().equals("CONNECT")) {
+            String username = message.getHeaders().get("login");
+            String password = message.getHeaders().get("passcode");
+            Map<String, String> headers = new HashMap<>();
+
+            if (connectionsImpl.getPassword(username) != null) {
+                if (!password.equals(connectionsImpl.getPassword(username))) {
+                    errorLogin1(message,username);
+                    shouldTerminate = true;
+                }else{
+                    headers.put("version", "1.2");
+                    connectionsImpl.send(connectionId, new Frame("CONNECTED", headers, ""));
+                }
+            } else {
+                connectionsImpl.addLogin(username, password);
+                headers.put("version", "1.2");
+                connectionsImpl.send(connectionId, new Frame("CONNECTED", headers, ""));
+            }
+        }
+        if (message.getCommand().equals("SEND")) {
+            // String receipt = message.getHeaders().get("receipt");
+            // if(receipt != null) {
+            // Map<String, String> headers = new ConcurrentHashMap<>();
+            // headers.put("receipt-id", receipt);
+            // connections.send(connectionId, new Frame("RECEIPT", headers, ""));
+            // }
+            sendReceipt(message.getHeaders().get("receipt"));
+            String topic = message.getHeaders().get("destination");
+            String body = message.getBody();
+
+            Map<String, String> headers = new ConcurrentHashMap<>();
+            headers.put("message-id", connectionsImpl.getMessageId() + "");
+            headers.put("destination", topic);
+
+            for (Integer id : connectionsImpl.getChannels().get(topic)) {
+                if(id == connectionId) continue;
+                headers.put("subscription", connectionsImpl.getSubscriptionIDs(id).get(topic) + "");
+                connectionsImpl.send(id, new Frame("MESSAGE", headers, body));
+            }
+
+        }
+        if (message.getCommand().equals("SUBSCRIBE")) {
             String topic = message.getHeaders().get("destination");
             int subscriptionId = Integer.parseInt(message.getHeaders().get("id"));
             subscriptions.put(subscriptionId, topic);
             subscribedTopics.add(topic);
-            ((ConnectionsImpl)connections).addChannel(topic, connectionId);
-        }if(message.getCommand().equals("UNSUBSCRIBE")) {
+            connectionsImpl.addSubscription(topic, connectionId, subscriptionId);
+        }
+        if (message.getCommand().equals("UNSUBSCRIBE")) {
+            // String receipt = message.getHeaders().get("receipt");
+            // if(receipt != null) {
+            // Map<String, String> headers = new ConcurrentHashMap<>();
+            // headers.put("receipt-id", receipt);
+            // connections.send(connectionId, new Frame("RECEIPT", headers, ""));
+            // }
             int subscriptionId = Integer.parseInt(message.getHeaders().get("id"));
             String topic = subscriptions.remove(subscriptionId);
             subscribedTopics.remove(topic);
-        }if(message.getCommand().equals("DISCONNECT")) {
+            connectionsImpl.removeSubscription(topic, connectionId);
 
-            // Do something with the message
+        }
+        if (message.getCommand().equals("DISCONNECT")) {
+            sendReceipt(message.getHeaders().get("receipt"));
+            connectionsImpl.removeActiveClient(connectionId);
             shouldTerminate = true;
         }
     }
+
+    public void sendReceipt(String receipt) {
+        if (receipt != null) {
+            Map<String, String> headers = new ConcurrentHashMap<>();
+            headers.put("receipt-id", receipt);
+            connectionsImpl.send(connectionId, new Frame("RECEIPT", headers, ""));
+        }
+}
+
+    public void errorLogin1(Frame message, String username) {
+        Map<String, String> headers = new ConcurrentHashMap<>();
+        headers.put("message", "Password does not match username");
+        connectionsImpl.send(connectionId, new Frame("ERROR", headers,
+                "The message:\n----\n" + message.toString().substring(0, message.toString().length()-2) + "----\n" +
+                        "User "+username+"'s password is diffrent than what you inserted."));
+}
 
     @Override
     public boolean shouldTerminate() {
         return shouldTerminate;
     }
-    
+
+    // public void removeAllSubscriptions() {
+    //     for (String topic : subscribedTopics) {
+    //         connectionsImpl.removeSubscription(topic, connectionId);
+    //     }
+    // }
+
 }

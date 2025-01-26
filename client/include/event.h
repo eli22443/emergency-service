@@ -27,6 +27,7 @@ public:
     Event(const std::string & frame_body);
     virtual ~Event();
     void setEventOwnerUser(std::string setEventOwnerUser);
+    void set_channel_name(std::string channel_name);
     const std::string &getEventOwnerUser() const;
     const std::string &get_channel_name() const;
     const std::string &get_city() const;
@@ -44,3 +45,4 @@ struct names_and_events {
 
 // function that parses the json file and returns a names_and_events object
 names_and_events parseEventsFile(std::string json_path);
+void split_str(const std::string& s, char delim, std::vector<std::string>& elems);

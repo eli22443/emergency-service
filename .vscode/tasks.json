@@ -4,7 +4,7 @@
             "type": "shell",
             "label": "make StompWCIClient",
             "command": "make",
-            "args": ["StompWCIClient"],
+            "args": ["clean","StompWCIClient"],
             "options": {
                 "cwd": "${workspaceFolder}/client"
             }

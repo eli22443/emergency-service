@@ -8,7 +8,11 @@
 #include <sstream>
 #include <cstring>
 
+<<<<<<< HEAD
 
+=======
+// #include "../include/keyboardInput.h"
+>>>>>>> d02c4a6c92351b8a600c7b8ccd6ac1143ac3b12d
 
 using namespace std;
 using json = nlohmann::json;
@@ -92,6 +96,9 @@ Event::Event(const std::string &frame_body): channel_name(""), city(""),
             else if(key == "event name") {
                 name = val;
             }
+            else if(key == "destination") {//channel name?????
+                channel_name = val.at(0) == '/' ? val.substr(1) : val;
+            }
             else if(key == "date time") {
                 date_time = std::stoi(val);
             }
@@ -143,4 +150,16 @@ names_and_events parseEventsFile(std::string json_path)
     names_and_events events_and_names{channel_name, events};
 
     return events_and_names;
+}
+
+void split_str(const string &s, char delim, vector<string> &elems) {
+    stringstream ss(s);
+    string item;
+    while (getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+}
+
+void Event::set_channel_name(std::string channel_name) {
+    this->channel_name = channel_name;
 }
