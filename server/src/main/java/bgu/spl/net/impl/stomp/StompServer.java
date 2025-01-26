@@ -12,12 +12,12 @@ public class StompServer {
                 FrameMessageEncodeDecoder::new // message encoder decoder factory
         ).serve();
 
-        // Server.reactor(
-        // Runtime.getRuntime().availableProcessors(),
-        // 7777, //port
-        // () -> new EchoProtocol(), //protocol factory
-        // LineMessageEncoderDecoder::new //message encoder decoder factory
-        // ).serve();
+        Server.reactor(
+        Runtime.getRuntime().availableProcessors(),
+        7778, //port
+        () -> new FrameStompMessagingProtocol(), //protocol factory
+        FrameMessageEncodeDecoder::new //message encoder decoder factory
+        ).serve();
 
     }
 }
