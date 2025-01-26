@@ -140,6 +140,10 @@ void StompProtocol::handleJoin(const std::string &command)
         std::cout << "join command needs 1 args: {channel_name}" << std::endl;
         return;
     }
+    if(subscriptionIds.find(channel) != subscriptionIds.end()) {
+        std::cout << "you are already subscribed to channel " << channel << std::endl;
+        return;
+    }
 
     int subscriptionId = subId++;
     subscriptionIds[channel] = subscriptionId;
