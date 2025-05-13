@@ -27,7 +27,6 @@ private:
     std::string currentUser;
     std::map<std::string, int> subscriptionIds;  
     std::map<std::string, std::map<std::string, std::vector<Event>>> userEvents; 
-
     
 public:
     std::string getNextMessageId();
@@ -44,7 +43,6 @@ public:
     void processServerMessage(const std::string& message);
     void dissconnect();
     std::string epoch_to_date(std::time_t timestamp);
-
     StompProtocol();
     ~StompProtocol();
     void start();

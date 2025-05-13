@@ -2,12 +2,10 @@ package bgu.spl.net.srv;
 
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.StompMessagingProtocol;
-
 import java.io.Closeable;
 import java.util.function.Supplier;
 
 public interface Server<T> extends Closeable {
-
     /**
      * The main loop of the server, Starts listening and handling new clients.
      */
@@ -54,5 +52,4 @@ public interface Server<T> extends Closeable {
             Supplier<MessageEncoderDecoder<T>> encoderDecoderFactory) {
         return new Reactor<T>(nthreads, port, protocolFactory, encoderDecoderFactory);
     }
-
 }

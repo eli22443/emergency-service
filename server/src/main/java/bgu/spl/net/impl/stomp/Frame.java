@@ -37,5 +37,4 @@ public class Frame {
     public String getBody() {
         return body;
     }
-    
 }

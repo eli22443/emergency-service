@@ -3,7 +3,6 @@ package bgu.spl.net.srv;
 
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.StompMessagingProtocol;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedSelectorException;
@@ -22,7 +21,6 @@ public class Reactor<T> implements Server<T> {
     private final ActorThreadPool pool;
     private Selector selector;
     private ConnectionsImpl<T> connections;
-
     private Thread selectorThread;
     private final ConcurrentLinkedQueue<Runnable> selectorTasks = new ConcurrentLinkedQueue<>();
 
@@ -37,7 +35,6 @@ public class Reactor<T> implements Server<T> {
         this.protocolFactory = protocolFactory;
         this.readerFactory = readerFactory;
         this.connections = new ConnectionsImpl<>();
-
     }
 
     @Override
@@ -51,9 +48,10 @@ public class Reactor<T> implements Server<T> {
             serverSock.bind(new InetSocketAddress(port));
             serverSock.configureBlocking(false);
             serverSock.register(selector, SelectionKey.OP_ACCEPT);
-            System.out.println("Server started");
 
+            System.out.println("Server started");
             int id = 0;
+
             while (!Thread.currentThread().isInterrupted()) {
 
                 selector.select();
@@ -70,7 +68,6 @@ public class Reactor<T> implements Server<T> {
                         handleReadWrite(key);
                     }
                 }
-
                 selector.selectedKeys().clear(); // clear the selected keys set so that we can know about new events
 
             }

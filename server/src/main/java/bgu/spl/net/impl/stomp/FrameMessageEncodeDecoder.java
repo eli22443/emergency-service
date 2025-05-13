@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
 import bgu.spl.net.api.MessageEncoderDecoder;
 
 public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
@@ -15,7 +14,8 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
     @Override
     public Frame decodeNextByte(byte nextByte) {
         if (nextByte == '\u0000') {
-            // System.out.println(new String(bytes, 0, len, StandardCharsets.UTF_8)+"^^^^RECIEVED");
+            // System.out.println(new String(bytes, 0, len,
+            // StandardCharsets.UTF_8)+"^^^^RECIEVED");
             return popFrame();
         }
 
@@ -41,7 +41,6 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
         String str = new String(bytes, 0, len, StandardCharsets.UTF_8);
         StringBuilder strBuild = new StringBuilder(str);
         len = 0;
-
         String command = "";
         Map<String, String> headers = new HashMap<>();
         String body = "";
@@ -51,6 +50,7 @@ public class FrameMessageEncodeDecoder implements MessageEncoderDecoder<Frame> {
         body = getBody(strBuild);
 
         Frame result = new Frame(command, headers, body);
+
         return result;
     }
 

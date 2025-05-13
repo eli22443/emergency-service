@@ -67,7 +67,7 @@ public class ConnectionsImpl<T> implements Connections<T> {
     public synchronized void addSubscription(String channel, int connectionId, int subscriptionId) {
         if (!channels.containsKey(channel))
             channels.put(channel, ConcurrentHashMap.newKeySet());
-        if(!subscriptionIDs.containsKey(connectionId))
+        if (!subscriptionIDs.containsKey(connectionId))
             subscriptionIDs.put(connectionId, new ConcurrentHashMap<>());
         channels.get(channel).add(connectionId);
         subscriptionIDs.get(connectionId).put(channel, subscriptionId);
@@ -84,22 +84,6 @@ public class ConnectionsImpl<T> implements Connections<T> {
         return logins.get(username);
     }
 
-    // public synchronized void sendMessage(String topic, String body) {
-    //     Map<String, String> headers = new ConcurrentHashMap<>();
-    //     headers.put("message-id", Integer.toString(messageId));
-    //     headers.put("destination", topic);
-
-    //     Set<Integer> channelList = channels.get(topic);
-    //     if (channelList != null) {
-    //         for (Integer id : channelList) {
-    //             headers.put("subscription", Integer.toString(subscriptionIDs.get(id).get(topic)));
-    //             send(id, new Frame("MESSAGE", headers, body));
-    //         }
-    //     }
-
-    //     send(topic, new Frame("MESSAGE", headers, body));
-    // }
-
     public int getMessageId() {
         return messageId++;
     }
@@ -107,7 +91,8 @@ public class ConnectionsImpl<T> implements Connections<T> {
     public synchronized Set<Integer> getChannel(String topic) {
         return channels.get(topic);
     }
-    public synchronized Map<String,Integer> getSubscriptionIDs(int connectionId){
+
+    public synchronized Map<String, Integer> getSubscriptionIDs(int connectionId) {
         return subscriptionIDs.get(connectionId);
     }
 

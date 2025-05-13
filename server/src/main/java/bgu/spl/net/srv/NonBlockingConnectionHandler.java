@@ -2,7 +2,6 @@ package bgu.spl.net.srv;
 
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.StompMessagingProtocol;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -100,6 +99,7 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
 
     private static ByteBuffer leaseBuffer() {
         ByteBuffer buff = BUFFER_POOL.poll();
+
         if (buff == null) {
             return ByteBuffer.allocateDirect(BUFFER_ALLOCATION_SIZE);
         }

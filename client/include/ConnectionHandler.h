@@ -6,11 +6,12 @@
 
 using boost::asio::ip::tcp;
 
-class ConnectionHandler {
+class ConnectionHandler
+{
 private:
 	const std::string host_;
 	const short port_;
-	boost::asio::io_service io_service_;   // Provides core I/O functionality
+	boost::asio::io_service io_service_; // Provides core I/O functionality
 	tcp::socket socket_;
 
 public:
@@ -47,8 +48,7 @@ public:
 	bool sendFrameAscii(const std::string &frame, char delimiter);
 	bool sendFrame(const std::string &frame);
 
-
 	// Close down the connection properly.
 	void close();
 
-}; //class ConnectionHandler
+}; // class ConnectionHandler

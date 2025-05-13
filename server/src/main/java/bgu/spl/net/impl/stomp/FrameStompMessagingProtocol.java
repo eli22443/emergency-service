@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import bgu.spl.net.api.StompMessagingProtocol;
 import bgu.spl.net.srv.Connections;
 import bgu.spl.net.srv.ConnectionsImpl;
@@ -15,10 +14,8 @@ import bgu.spl.net.srv.ConnectionsImpl;
 public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame> {
 
     private boolean shouldTerminate = false;
-
     private int connectionId; // Unique ID for this connection
     private ConnectionsImpl<Frame> connectionsImpl; // Reference to manage connections
-
     private final Set<String> subscribedTopics = new HashSet<>(); // Topics this client subscribed to
     private final Map<Integer, String> subscriptions = new ConcurrentHashMap<>(); // To manage subscriptions
 
