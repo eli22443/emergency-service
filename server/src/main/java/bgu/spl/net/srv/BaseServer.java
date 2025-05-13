@@ -1,4 +1,3 @@
-
 package bgu.spl.net.srv;
 
 import bgu.spl.net.api.MessageEncoderDecoder;
@@ -30,14 +29,13 @@ public abstract class BaseServer<T> implements Server<T> {
 
     @Override
     public void serve() {
-
         try (ServerSocket serverSock = new ServerSocket(port)) {
             System.out.println("Server started");
 
             this.sock = serverSock; // just to be able to close
             int id = 0;
-            while (!Thread.currentThread().isInterrupted()) {
 
+            while (!Thread.currentThread().isInterrupted()) {
                 Socket clientSock = serverSock.accept();
                 StompMessagingProtocol<T> protocol = protocolFactory.get();
                 protocol.start(id, connections);
@@ -51,7 +49,6 @@ public abstract class BaseServer<T> implements Server<T> {
             }
         } catch (IOException ex) {
         }
-
         System.out.println("server closed!!!");
     }
 
