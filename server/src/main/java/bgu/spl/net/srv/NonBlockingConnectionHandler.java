@@ -11,21 +11,19 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
-
     private static final int BUFFER_ALLOCATION_SIZE = 1 << 13; // 8k
     private static final ConcurrentLinkedQueue<ByteBuffer> BUFFER_POOL = new ConcurrentLinkedQueue<>();
-
     private final StompMessagingProtocol<T> protocol;
     private final MessageEncoderDecoder<T> encdec;
     private final Queue<ByteBuffer> writeQueue = new ConcurrentLinkedQueue<>();
     private final SocketChannel chan;
-    private final Reactor reactor;
+    private final Reactor<T> reactor;
 
     public NonBlockingConnectionHandler(
             MessageEncoderDecoder<T> reader,
             StompMessagingProtocol<T> protocol,
             SocketChannel chan,
-            Reactor reactor) {
+            Reactor<T> reactor) {
         this.chan = chan;
         this.encdec = reader;
         this.protocol = protocol;
@@ -50,12 +48,6 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
                         T nextMessage = encdec.decodeNextByte(buf.get());
                         if (nextMessage != null) {
                             protocol.process(nextMessage);
-                            // T response = protocol.process(nextMessage);
-                            // if (response != null) {
-                            // writeQueue.add(ByteBuffer.wrap(encdec.encode(response)));
-                            // reactor.updateInterestedOps(chan, SelectionKey.OP_READ |
-                            // SelectionKey.OP_WRITE);
-                            // }
                         }
                     }
                 } finally {
@@ -123,8 +115,8 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
     @Override
     public void send(T msg) {
         if (msg != null) {
-                writeQueue.add(ByteBuffer.wrap(encdec.encode(msg)));
-                reactor.updateInterestedOps(chan, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+            writeQueue.add(ByteBuffer.wrap(encdec.encode(msg)));
+            reactor.updateInterestedOps(chan, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
         }
     }
 }

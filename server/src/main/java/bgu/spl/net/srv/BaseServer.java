@@ -3,13 +3,10 @@ package bgu.spl.net.srv;
 
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.StompMessagingProtocol;
-import bgu.spl.net.impl.stomp.FrameStompMessagingProtocol;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.function.Supplier;
-
 
 public abstract class BaseServer<T> implements Server<T> {
 
@@ -35,10 +32,10 @@ public abstract class BaseServer<T> implements Server<T> {
     public void serve() {
 
         try (ServerSocket serverSock = new ServerSocket(port)) {
-			System.out.println("Server started");
+            System.out.println("Server started");
 
             this.sock = serverSock; // just to be able to close
-            int id=0;
+            int id = 0;
             while (!Thread.currentThread().isInterrupted()) {
 
                 Socket clientSock = serverSock.accept();
@@ -48,7 +45,7 @@ public abstract class BaseServer<T> implements Server<T> {
                         clientSock,
                         encdecFactory.get(),
                         protocol);
-                connections.addActiveClient(id++,handler);
+                connections.addActiveClient(id++, handler);
 
                 execute(handler);
             }
@@ -60,10 +57,10 @@ public abstract class BaseServer<T> implements Server<T> {
 
     @Override
     public void close() throws IOException {
-		if (sock != null)
-			sock.close();
+        if (sock != null)
+            sock.close();
     }
 
-    protected abstract void execute(BlockingConnectionHandler<T>  handler);
+    protected abstract void execute(BlockingConnectionHandler<T> handler);
 
 }

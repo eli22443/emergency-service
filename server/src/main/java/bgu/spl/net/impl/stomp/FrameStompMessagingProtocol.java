@@ -20,7 +20,6 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
     private ConnectionsImpl<Frame> connectionsImpl; // Reference to manage connections
 
     private final Set<String> subscribedTopics = new HashSet<>(); // Topics this client subscribed to
-    private final Map<Integer, String> receipts = new ConcurrentHashMap<>(); // To manage receipt IDs
     private final Map<Integer, String> subscriptions = new ConcurrentHashMap<>(); // To manage subscriptions
 
     @Override
@@ -31,13 +30,15 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
 
     @Override
     public void process(Frame message) {
-        
+
         if (message.getCommand().equals("CONNECT")) {
             String username = message.getHeaders().get("login");
             String password = message.getHeaders().get("passcode");
             Map<String, String> headers = new HashMap<>();
 
-            List<String> requiredHeaders = Arrays.asList(message.getHeaders().get("accept-version"), message.getHeaders().get("host"), message.getHeaders().get("login"), message.getHeaders().get("passcode"));
+            List<String> requiredHeaders = Arrays.asList(message.getHeaders().get("accept-version"),
+                    message.getHeaders().get("host"), message.getHeaders().get("login"),
+                    message.getHeaders().get("passcode"));
             for (String header : requiredHeaders) {
                 if (header == null) {
                     errorLogin2(message);
@@ -48,10 +49,10 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
 
             if (connectionsImpl.getPassword(username) != null) {
                 if (!password.equals(connectionsImpl.getPassword(username))) {
-                    errorLogin1(message,username);
+                    errorLogin1(message, username);
                     shouldTerminate = true;
-                }else{
-                    if(connectionsImpl.isActiveClient(username)){
+                } else {
+                    if (connectionsImpl.isActiveClient(username)) {
                         errorLogin3(message, username);
                         shouldTerminate = true;
                         return;
@@ -77,7 +78,8 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
             headers.put("destination", topic);
 
             for (Integer id : connectionsImpl.getChannels().get(topic)) {
-                if(id == connectionId) continue;
+                if (id == connectionId)
+                    continue;
                 headers.put("subscription", connectionsImpl.getSubscriptionIDs(id).get(topic) + "");
                 connectionsImpl.send(id, new Frame("MESSAGE", headers, body));
             }
@@ -112,35 +114,35 @@ public class FrameStompMessagingProtocol implements StompMessagingProtocol<Frame
             headers.put("receipt-id", receipt_id);
             connectionsImpl.send(connectionId, new Frame("RECEIPT", headers, ""));
         }
-}
+    }
 
-    public void errorLogin1(Frame message, String username) {//un- match password
+    public void errorLogin1(Frame message, String username) {// un- match password
         Map<String, String> errorHeaders = new ConcurrentHashMap<>();
         errorHeaders.put("message", "Password does not match username");
         connectionsImpl.send(connectionId, new Frame("ERROR", errorHeaders,
-                "The message:\n----\n" + message.toString().substring(0, message.toString().length()-2) + "----\n" +
-                        "User "+username+"'s password is diffrent than what you inserted."));
-}
-    public void errorLogin2(Frame message){//one of the header is missing
+                "The message:\n----\n" + message.toString().substring(0, message.toString().length() - 2) + "----\n" +
+                        "User " + username + "'s password is diffrent than what you inserted."));
+    }
+
+    public void errorLogin2(Frame message) {// one of the header is missing
         Map<String, String> errorHeaders = new ConcurrentHashMap<>();
         errorHeaders.put("message", "One of the header is missing ");
         connectionsImpl.send(connectionId, new Frame("ERROR", errorHeaders,
-                "The message:\n----\n" + message.toString().substring(0, message.toString().length()-2) + "----\n" +
+                "The message:\n----\n" + message.toString().substring(0, message.toString().length() - 2) + "----\n" +
                         " Check that you have entered all the required details."));
     }
-    public void errorLogin3(Frame message, String username){// if another client is already logged in 
+
+    public void errorLogin3(Frame message, String username) {// if another client is already logged in
         Map<String, String> errorHeaders = new HashMap<>();
         errorHeaders.put("message", "User already logged in");
         connectionsImpl.send(connectionId, new Frame("ERROR", errorHeaders,
-        "The message:\n----\n" + message.toString().substring(0, message.toString().length()-2) + "----\n" + 
-                "User "+username+" is already logged in somewhere else."));
-}
-    
+                "The message:\n----\n" + message.toString().substring(0, message.toString().length() - 2) + "----\n" +
+                        "User " + username + " is already logged in somewhere else."));
+    }
 
     @Override
     public boolean shouldTerminate() {
         return shouldTerminate;
     }
-
 
 }
