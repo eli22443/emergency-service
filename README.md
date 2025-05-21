@@ -84,12 +84,6 @@ summary summary.txt alice
 logout
 ```
 
-### Echo Client (for testing)
-You can also run the echo client for basic connectivity testing:
-```bash
-./bin/echoClient <host> <port>
-```
-
 ## Event File Format
 Event files should be in JSON format. See the assignment instructions for details.
 
