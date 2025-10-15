@@ -68,19 +68,19 @@ Usage:
 This will start the client and allow you to enter commands interactively.
 
 #### Supported Commands
-- `login {host:port} {username} {password}`: Connect and log in to the server.
+- `login {host:port} {user_name} {password}`: Connect and log in to the server.
 - `join {channel_name}`: Subscribe to a channel.
 - `exit {channel_name}`: Unsubscribe from a channel.
 - `report {file_name}`: Report events from a JSON file.
-- `summary {file_name} {user}`: Generate a summary for a user and write to a file.
+- `summary {channel_name} {user_name} {file_name}`: Generate a summary for a user and write to a file.
 - `logout`: Disconnect from the server.
 
 #### Example Session
 ```
 login localhost:7777 alice password123
-join /sports
+join police
 report events.json
-summary summary.txt alice
+summary police alice summary.txt
 logout
 ```
 
